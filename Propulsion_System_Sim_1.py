@@ -43,6 +43,8 @@ def dae_system(t, z):
 
     solution = root(algebraic_equations, x0, args=(z, t), method='hybr', tol=1e-5)
     x = solution.x
+
+    # Get m_dot, h and P from the solution
     
     # Differential Equations
     m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]]
@@ -123,10 +125,10 @@ m_2_0 = V_2*PropsSI('D','P',P_2_0,'T',T_2_0,'Nitrogen')
 
 #Calculate initial internal energy U using the total mass, and the pressure and temperature of the fluid (nitrogen)
 U_0_0 = m_0_0*PropsSI('U','P',P_0_0,'T',T_0_0,'Nitrogen')
-U_1_0 = m_0_0*PropsSI('U','P',P_1_0,'T',T_1_0,'Nitrogen')
-U_2_0 = m_0_0*PropsSI('U','P',P_2_0,'T',T_2_0,'Nitrogen')
-U_3_0 = m_0_0*PropsSI('U','P',P_3_0,'T',T_3_0,'Nitrogen')
-U_4_0 = m_0_0*PropsSI('U','P',P_4_0,'T',T_4_0,'Nitrogen')
+U_1_0 = m_1_0*PropsSI('U','P',P_1_0,'T',T_1_0,'Nitrogen')
+U_2_0 = m_2_0*PropsSI('U','P',P_2_0,'T',T_2_0,'Nitrogen')
+U_3_0 = m_3_0*PropsSI('U','P',P_3_0,'T',T_3_0,'Methanol') #Idk if this is the right thing
+U_4_0 = m_4_0*PropsSI('U','P',P_4_0,'T',T_4_0,'N2O')
 
 #Create vector of initial conditions 
 z0 = [m_0_0, m_1_0, m_2_0, m_3_0, m_4_0, U_0_0, U_1_0, U_2_0, U_3_0, U_4_0]
