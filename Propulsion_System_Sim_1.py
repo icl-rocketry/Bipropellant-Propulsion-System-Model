@@ -11,33 +11,22 @@ System = pd.read_csv('Prop_System_Network_Setup_1.csv')
 
 #print(System)
 
-#print(System.loc[:]['Node Description'])
 
-#P_0_0 = int(System.loc[0]['IC 1 Value'])
-
-#print(P_0_0)
-
+#Find the number of nodes and elements in the system
 Nodes = System['Node Number'].max() + 1
 Elements = System['Element Number'].max() + 1
 
-#ODEs = np.array(System.index[System['Node Type'] == 'Mass'])
-
-#print(ODEs)
-
+# Solve a series of non-linear algebraic equations at a single timestep (basically algebraic constraints for each timestep of the differential equation solver)
 def algebraic_equations(x, z, t):
-    F = np.zeros(len(x))
+    F = np.zeros(len(x)) #Define an array of residuals (1 for each equation)
     P = x[:Nodes-7]
     h = x[Nodes-8:]
     m_dot = x[]
 
-    if m_3 <= 0.1:
-        F[0] = m_dot_L - 0
-        F[1] = P_3 - P_atm
-    else:
-        F[0] = m_dot_L - Cd_3*A_3*2*rho_L*(P_3 - P_atm)/np.sqrt(abs(2*rho_L*(P_3 - P_atm)))
-        F[1] = m_dot_L - K2_Flow_Rate(P_2, P_3, rho_1, rho_2, T, t)
-    m_dot_reg, K_v_reg = K1_Flow_Rate(P_1, P_2, rho_1, rho_2, T, t)
-    F[2] = m_dot_N2 - m_dot_reg
+    # ---------------------------------------------------------------------------------------------------------------------------------
+    # Put all the equations in here and make them equal to the residuals (so that if residuals are all zero, you have an exact solution)
+    # ---------------------------------------------------------------------------------------------------------------------------------
+
     return F
 
 # Define the DAE system (Differential Algebraic Equation System)
@@ -59,12 +48,12 @@ def dae_system(t, z):
     m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]]
     m_dot_1 = m_dot[System.index[System['Downstream Node'] == 1]]
     m_dot_2 = m_dot[System.index[System['Downstream Node'] == 2]]
-    if m_3 <= 0:
+    if m_3 <= 0: #Check for fuel depletion
         m_3 = 0
         m_dot_3 = 0
     else:
         m_dot_3 = -m_dot[System.index[System['Upstream Node'] == 3]]
-    if m_4 <= 0:
+    if m_4 <= 0: #Check for oxidiser depletion
         m_4 = 0
         m_dot_4 = 0
     else:
@@ -155,3 +144,5 @@ sol = solve_ivp(dae_system, t_span, z0, method='LSODA', t_eval=t_eval)
 # Access the solution
 t = sol.t
 m_0_0, m_1_0, m_2_0, m_3_0, m_4_0, U_0_0, U_1_0, U_2_0, U_3_0, U_4_0 = sol.y
+
+#Plot some stuff
