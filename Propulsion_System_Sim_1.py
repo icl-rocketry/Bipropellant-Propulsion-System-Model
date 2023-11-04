@@ -14,37 +14,63 @@ System = pd.read_csv('Prop_System_Network_Setup_1.csv')
 
 #Find the number of nodes and elements in the system
 Nodes = System['Node Number'].max() + 1
+NoMassNodes = Nodes - 5
 Elements = System['Element Number'].max() + 1
+FlowElements = Elements - 2
+
+def explicit_algebraic_equations(m_2, m_3, rho_1):
+    P_1 = P_1_0*((rho_1/rho_1_0)**gamma_N2)
+    T = P_1/(rho_1*R_N2)
+    rho_2 = m_2/(V_2 - (m_3/rho_L))
+    P_2 = rho_2*T*R_N2
+    m_1 = V_1*rho_1
+    return P_1, T, rho_2, P_2, m_1
 
 # Solve a series of non-linear algebraic equations at a single timestep (basically algebraic constraints for each timestep of the differential equation solver)
 def algebraic_equations(x, z, t):
     F = np.zeros(len(x)) #Define an array of residuals (1 for each equation)
-    P = x[:Nodes-7]
-    h = x[Nodes-8:]
-    m_dot = x[]
+    P = x[:NoMassNodes-1]
+    #h = x[Nodes-8:]
+    m_dot = x[NoMassNodes:]
 
     # ---------------------------------------------------------------------------------------------------------------------------------
     # Put all the equations in here and make them equal to the residuals (so that if residuals are all zero, you have an exact solution)
     # ---------------------------------------------------------------------------------------------------------------------------------
+
+    # Mass conservation at each massless node
+    for i in range(0,len(P)): #iterate through every node
+        for j in range(0,len(m_dot)): #iterate through every element
+            if System.index[System['Upstream Node'] == i] == j:
+                F[i] += -m_dot[j]
+            elif System.index[System['Downstream Node'] == i] == j:
+                F[i] += m_dot[j]
+    
+    # Momentum conservation across every element
+    for i in range(0,len(m_dot)):
+        if SystemSystem[5:Nodes-1]['IC 1 Parameter']
+
+
 
     return F
 
 # Define the DAE system (Differential Algebraic Equation System)
 def dae_system(t, z):
     
-    m_0, m_1, m_2, m_3, m_4, U_0, U_1, U_2, U_3, U_4 = z
+    m_0, m_1, m_2, m_3, m_4 = z
 
     #Algebraic equations to determine other state variables
     
-    P_0 = System[6:Nodes-1]['IC 1 Parameter']
-    h_0 = System[6:Nodes-1]['IC 2 Parameter']
+    
+
+    P_0 = System[5:Nodes-1]['IC 1 Parameter']
+    #h_0 = System[5:Nodes-1]['IC 2 Parameter']
     m_dot_0 = System[2:Elements-1]['IC 3 Parameter']
-    x0 = np.concatenate(P_0,h_0,m_dot_0)
+    x0 = np.concatenate(P_0,m_dot_0)
 
     solution = root(algebraic_equations, x0, args=(z, t), method='hybr', tol=1e-5)
     x = solution.x
 
-    # Get m_dot, h and P from the solution
+    # Get m_dot and P from the solution
     
     # Differential Equations
     m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]]
@@ -61,11 +87,13 @@ def dae_system(t, z):
     else:
         m_dot_4 = -m_dot[System.index[System['Upstream Node'] == 4]]
 
+    '''
     U_dot_0 = m_dot_0*h[System.index[System['Upstream Node'] == 0]]
     U_dot_1 = m_dot_1*h[System.index[System['Downstream Node'] == 1]]
     U_dot_2 = m_dot_2*h[System.index[System['Downstream Node'] == 2]]
     U_dot_3 = m_dot_0*h[System.index[System['Upstream Node'] == 3]]
     U_dot_4 = m_dot_0*h[System.index[System['Upstream Node'] == 4]]
+    '''
 
     return [m_dot_0, m_dot_1, m_dot_2, m_dot_3, m_dot_4, U_dot_0, U_dot_1, U_dot_2, U_dot_3, U_dot_4]
 
@@ -123,15 +151,17 @@ m_0_0 = V_0*PropsSI('D','P',P_0_0,'T',T_0_0,'Nitrogen')
 m_1_0 = V_1*PropsSI('D','P',P_1_0,'T',T_1_0,'Nitrogen')
 m_2_0 = V_2*PropsSI('D','P',P_2_0,'T',T_2_0,'Nitrogen')
 
+'''
 #Calculate initial internal energy U using the total mass, and the pressure and temperature of the fluid (nitrogen)
 U_0_0 = m_0_0*PropsSI('U','P',P_0_0,'T',T_0_0,'Nitrogen')
 U_1_0 = m_1_0*PropsSI('U','P',P_1_0,'T',T_1_0,'Nitrogen')
 U_2_0 = m_2_0*PropsSI('U','P',P_2_0,'T',T_2_0,'Nitrogen')
 U_3_0 = m_3_0*PropsSI('U','P',P_3_0,'T',T_3_0,'Methanol') #Idk if this is the right thing
 U_4_0 = m_4_0*PropsSI('U','P',P_4_0,'T',T_4_0,'N2O')
+'''
 
 #Create vector of initial conditions 
-z0 = [m_0_0, m_1_0, m_2_0, m_3_0, m_4_0, U_0_0, U_1_0, U_2_0, U_3_0, U_4_0]
+z0 = [m_0_0, m_1_0, m_2_0, m_3_0, m_4_0]
 
 
 # Define the time span for integration
