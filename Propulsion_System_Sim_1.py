@@ -94,7 +94,6 @@ def Nozzle(P_chamber, D_throat, D_exit):
     A_throat = np.pi*(D_throat**2)/4
     m_dot = (A_throat*P_chamber/np.sqrt(T_c))*np.sqrt(gamma/R)*((gamma+1)/2)**(-(gamma+1)/(2*gamma-2)) #Mass flow vs chamber pressure relationship
     P_exit = 0.8e5 #Replace with an equation for nozzle exit pressure vs chamber pressure (requires iterative solve of M_e currently)
-    print(m_dot)
     return m_dot
 
 #Function to find the mass flow rate through an injector orifice for a Single Phase Incompressible (SPI) flow
@@ -110,25 +109,26 @@ def Pipe(m_dot,rho,mu,L,D,k):
     if m_dot < 1e-10:
         dP = 0
     else:
-        U = m_dot/(rho*(D**2)*np.pi/4) #Find fluid velocity
+        U = abs(m_dot)/(rho*(D**2)*np.pi/4) #Find fluid velocity
         Re_D = rho*U*D/mu #Find Reynolds number of flow
         f = 0.25/(np.log10(k/(3.7*D) + 5.74/(Re_D**0.9))**2) #Find Darcy friction factor of flow
-        dP = (m_dot**2)*8*f*L/(rho*(np.pi**2)*D**5) #Find pressure drop across pipe
+        dP = (m_dot*abs(m_dot))*8*f*L/(rho*(np.pi**2)*D**5) #Find pressure drop across pipe
     return dP
 
 #Function to find mass flow rate across a component with a defined Kv in Nitrogen Gas flow
 def Kv_Component_N2(P_1, P_2, T, K_v):
     P_1,P_2 = P_1*1e-5, P_2*1e-5 #Convert pressure to bar
     # determine flow regime through valve
-    if (P_2 >= 0.528*P_1):
+    if P_1 - P_2 < 1e-5:
+        m_dot = 0
+    elif (P_2 >= 0.528*P_1):
         # non-choked flow
         Q_N = K_v*514*(((P_1-P_2)*P_2)/(rhost*T))/np.sqrt(abs(((P_1-P_2)*P_2)/(rhost*T)))
-    elif P_1 - P_2 < 1e-5:
-        m_dot = 0
+        m_dot = Q_N*(Pst/(R_N2*Tst))*(1/3600) #Convert standard flow rate to mass flow rate in kg/s
     else:
         # choked flow
         Q_N = K_v*257*P_1/np.sqrt(abs(rhost*T))
-    m_dot = Q_N*(Pst/(R_N2*Tst))*(1/3600) #Convert standard flow rate to mass flow rate in kg/s
+        m_dot = Q_N*(Pst/(R_N2*Tst))*(1/3600) #Convert standard flow rate to mass flow rate in kg/s
     return m_dot
 
 #Function to find mass flow rate across a component with a defined Kv in SPI Liquid flow
@@ -146,8 +146,8 @@ def Regulator(P_1, P_2, T, K_v_max, t):
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     
     #Equations to approximate a mechanical regulator with a certain maximum Kv and spring
-    Kp = 0.05
-    K_v_controlled = 0.05 + (30 - P_2)*Kp
+    Kp = 0.5
+    K_v_controlled = (30 - P_2)*Kp
     
     if K_v_controlled < 0:
         K_v_controlled = 0
@@ -171,7 +171,7 @@ def Ox_Valve(P_1, P_2, K_v_max, t):
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 0.3, 0.3]) # Define the Kv of the valve based on a predefined path
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 4, 4]) # Define the Kv of the valve based on a predefined path
 
-    K_v = K_v_max*np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
+    K_v = K_v_max*np.interp(t, [0, 0.1, 0.2, 2, 2.1, 4, 4.1, 10], [1, 1, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
 
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     SG = rho_4_L/1000 #Calculate specific gravity of propellant (value for water is 1)
@@ -183,7 +183,7 @@ def Fuel_Valve(P_1, P_2, K_v_max, t):
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 0.3, 0.3]) # Define the Kv of the valve based on a predefined path
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 4, 4]) # Define the Kv of the valve based on a predefined path
 
-    K_v = K_v_max*np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
+    K_v = K_v_max*np.interp(t, [0, 0.1, 0.2, 2, 2.1, 4, 4.1, 10], [1, 1, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
 
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     SG = rho_3_L/1000 #Calculate specific gravity of propellant (value for water is 1)
@@ -192,7 +192,8 @@ def Fuel_Valve(P_1, P_2, K_v_max, t):
     return m_dot
 
 def explicit_algebraic_equations(z):
-    print('mark 4')
+    #print('mark 4')
+    print(z)
     m_0, m_1, m_2, m_3, m_4 = z
     V_0 = System.loc[0]['Param. 1 Value']*1e-3
     V_1 = System.loc[1]['Param. 3 Value']*1e-3
@@ -208,7 +209,7 @@ def explicit_algebraic_equations(z):
     P_3 = P_1
     P_4 = P_2
 
-    print('mark 4.5')
+    #print('mark 4.5')
     return P_0, P_1, P_2, P_3, P_4, T
 
 # Solve a series of non-linear algebraic equations at a single timestep (basically algebraic constraints for each timestep of the differential equation solver)
@@ -228,15 +229,17 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
     # Mass conservation at each massless node
     for i in range(0,len(P)): #iterate through every node
         if System.loc[i]['Node Description'] == 'Nozzle Exit': #Apply boundary condition at the nozzle exit (don't test for continuity here)
-            F[i] = P[i] - 0.8*1e5
+            F[i] = (P[i] - 0.8*1e5) * 1e-7
         elif i < 5: #Apply boundary conditions for pressure at all the tank nodes (don't test for continuity here)
-            F[i] = P[i] - P_guess[i] 
+            F[i] = (P[i] - P_guess[i]) * 1e-7
         else: #Otherwise, it is an internal node where mass continuity equations are needed
             for j in range(2,len(m_dot)+2): #iterate through every element 
-                if System.loc[i]['Upstream Node'] == j:
+                if System.loc[j]['Upstream Node'] == i:
                     F[i] += -m_dot[j-2] #If the node is upstream of the element, then the mass flow is flowing out of the node through that element (defined as negative)
-                elif System.loc[i]['Downstream Node'] == j:
+                elif System.loc[j]['Downstream Node'] == i:
                     F[i] += m_dot[j-2] #If the node is downstream of the element, then the mass flow is flowing into the node through that element (defined as positive)
+        if System.loc[i]['Fluid'] == 'Nitrogen': #Check if the fluid is N2
+            F[i] *= 1e2 #Multiply nitrogen mass flow equations 
     
     # Momentum conservation across every element
     for i in range(2,len(m_dot)+2):
@@ -298,6 +301,7 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
             print(System.loc[i]['Element Type'])
             #Some other basic equation to prevent errors
 
+
     #print(F)
 
     return F
@@ -305,8 +309,10 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
 def algebraic_equations(t, z):
     #print('mark 2')
     P_0, P_1, P_2, P_3, P_4, T = explicit_algebraic_equations(z)
+    #print(explicit_algebraic_equations(z))
     
     P_guess = np.array(System.loc[:Nodes]['IC 1 Value'])*1e5
+    #print(P_0)
     P_guess[0] = P_0 #Assign Boundary Conditions
     P_guess[1] = P_1
     P_guess[2] = P_2
@@ -319,8 +325,10 @@ def algebraic_equations(t, z):
     x0 = np.concatenate((P_guess,m_dot_guess))
     #print(x0)
     #print('mark 5')
-    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='lm', tol=1e-10)
+    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='hybr', tol=1e-10)
     x = solution.x
+    print('Residuals: ', implicit_algebraic_equations(x, z, t, P_guess, T))
+
     #print('mark 7')
     P = x[:Nodes]
     m_dot = x[Nodes:]
@@ -330,7 +338,7 @@ def algebraic_equations(t, z):
 # Define the DAE system (Differential Algebraic Equation System)
 def dae_system(t, z):
     #print('mark 1')
-    print('T = ',t)
+    print('t = ',t)
     m_0, m_1, m_2, m_3, m_4 = z
 
     #Algebraic equations to determine other state variables
@@ -338,19 +346,19 @@ def dae_system(t, z):
     
 
     # Differential Equations
-    m_dot_0 = -m_dot[int(System.index[System['Upstream Node'] == 0])]
-    m_dot_1 = m_dot[int(System.index[System['Downstream Node'] == 1])]
-    m_dot_2 = m_dot[int(System.index[System['Downstream Node'] == 2])]
+    m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]]
+    m_dot_1 = m_dot[System.index[System['Downstream Node'] == 1]]
+    m_dot_2 = m_dot[System.index[System['Downstream Node'] == 2]]
     if m_3 <= 0: #Check for fuel depletion
         m_3 = 0
         m_dot_3 = 0
     else:
-        m_dot_3 = -m_dot[int(System.index[System['Upstream Node'] == 3])]
+        m_dot_3 = -m_dot[System.index[System['Upstream Node'] == 3]]
     if m_4 <= 0: #Check for oxidiser depletion
         m_4 = 0
         m_dot_4 = 0
     else:
-        m_dot_4 = -m_dot[int(System.index[System['Upstream Node'] == 4])]
+        m_dot_4 = -m_dot[System.index[System['Upstream Node'] == 4]]
 
     '''
     U_dot_0 = m_dot_0*h[System.index[System['Upstream Node'] == 0]]
@@ -365,28 +373,84 @@ def dae_system(t, z):
 
 
 # Define the time span for integration
-t_span = (0, 10)
+t_span = (0, 0.5)
 
 # Generate evaluation times
-t_eval = np.linspace(*t_span, 100)
+t_eval = np.linspace(*t_span, 10)
 
 # Solve the DAE
-#sol = solve_ivp(dae_system, t_span, z0, method='LSODA', t_eval=t_eval)
+sol = solve_ivp(dae_system, t_span, z0, method='LSODA', t_eval=t_eval)
 
+'''
 t = 4
 
 P, m_dot, T = algebraic_equations(t, z0)
 
-print('Pressures: ',P*1e-5)
-print('Mass Flows: ',m_dot)
 
+plt.barh(System.loc[:]['Node Description'],P[:]*1e-5)
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Pressure [bar]')
+plt.show()
+
+
+plt.barh(System.loc[2:]['Element Description'],m_dot)
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Mass Flow Rate [kg/s]')
+plt.show()
+
+#print('Pressures: ',P*1e-5)
+#print('Mass Flows: ',m_dot)
+'''
 
 # Access the solution
-#t = sol.t
-#m_0, m_1, m_2, m_3, m_4 = sol.y
+t = sol.t
+m_0, m_1, m_2, m_3, m_4 = sol.y
 
 #Plot some stuff
-'''
+
+
+P = np.zeros((len(m_0),Nodes))
+m_dot = np.zeros((len(m_0),FlowElements))
+T = np.zeros(len(m_0))
+
+for i in range(0, len(P)):
+    P[i,:], m_dot[i,:], T[i] = algebraic_equations(t[i], [m_0[i],m_1[i],m_2[i],m_3[i],m_4[i]])
+
+for i in range(0, FlowElements):
+    label = 'm_dot_' + str(i)
+    plt.plot(t,m_dot[:,i], label=label)
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Time [s]')
+plt.ylabel('Mass Flow Rate [kg/s]')
+plt.legend()
+plt.show()
+
+plt.plot(t,T, label='T')
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Time [s]')
+plt.ylabel('Temperature [K]')
+plt.legend()
+plt.show()
+
+for i in range(0, Nodes):
+    label = 'P_' + str(i)
+    plt.plot(t,P[:,i]*1e-5, label=label)
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Time [s]')
+plt.ylabel('Pressure [bar]')
+plt.legend()
+plt.show()
+
 plt.plot(t,m_0, label='m_0')
 plt.plot(t,m_1, label='m_1')
 plt.plot(t,m_2, label='m_2')
@@ -399,4 +463,3 @@ plt.xlabel('Time [s]')
 plt.ylabel('Mass [kg]')
 plt.legend()
 plt.show()
-'''
