@@ -377,10 +377,10 @@ def dae_system(t, z):
 
 
 # Define the time span for integration
-t_span = (0, 2)
+t_span = (0, 3)
 
 # Generate evaluation times
-t_eval = np.linspace(*t_span, 10)
+t_eval = np.linspace(*t_span, 1000)
 
 
 '''
@@ -456,7 +456,7 @@ plt.minorticks_on()
 plt.grid(which='minor',axis='both',linewidth = 0.2)
 plt.xlabel('Time [s]')
 plt.ylabel('Pressure [bar]')
-plt.ylim(0,40)
+plt.ylim(0,55)
 plt.legend()
 plt.show()
 

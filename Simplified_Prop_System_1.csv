@@ -1,9 +1,9 @@
 Node Number,Node Description,Node Type,Fluid,IC 1 Parameter,IC 1 Value,IC 1 Unit,IC 2 Parameter,IC 2 Value,IC 2 Unit,Param. 1 Name,Param. 1 Value,Param. 1 Unit,Param. 2 Name,Param. 2 Value,Param. 2 Unit,,Element Number,Element Description,Element Type,Upstream Node,Downstream Node,Param. 3 Name,Param. 3 Value,Param. 3 Unit,Param. 4 Name,Param. 4 Value,Param. 4 Unit,Param. 5 Name,Param. 5 Value,Param. 5 Unit,Param. 6 Name,Param. 6 Value,Param. 6 Unit,Param. 7 Name,Param. 7 Value,Param. 7 Unit,IC 3 Parameter,IC 3 Value,IC 3 Unit
 0,HP N2 Tank,Mass,Nitrogen,P,300,bar,T,298,K,Volume,3,L,,,,,0,Ox Tank,Multi-species Tank,2,4,Volume,10,L,,,,,,,,,,,,,,,
-1,Fuel Tank Ullage,Mass,Nitrogen,P,25,bar,T,298,K,,,,,,,,1,Fuel Tank,Multi-species Tank,1,3,Volume,3.5,L,,,,,,,,,,,,,,,
-2,Ox Tank Ullage,Mass,Nitrogen,P,28,bar,T,298,K,,,,,,,,2,Pressure Regulator,Regulator,0,5,Valve ID,0,,Kv_Max,0.5,m^3/hr,,,,,,,,,,mdot,0.005,kg/s
+1,Fuel Tank Ullage,Mass,Nitrogen,P,50,bar,T,298,K,,,,,,,,1,Fuel Tank,Multi-species Tank,1,3,Volume,3.5,L,,,,,,,,,,,,,,,
+2,Ox Tank Ullage,Mass,Nitrogen,P,50,bar,T,298,K,,,,,,,,2,Pressure Regulator,Regulator,0,5,Valve ID,0,,Kv_Max,0.5,m^3/hr,,,,,,,,,,mdot,0.005,kg/s
 3,Fuel in Tank,Mass,Methanol,m,2,kg,T,298,K,,,,,,,,3,"1/4"" Ox Pipe",Pipe,5,2,D_Inner,4.2,mm,Length,0.3,m,Roughness,0.015,mm,,,,,,,mdot,0.002,kg/s
-4,Ox in Tank,Mass,Nitrous Oxide,m,3,kg,T,270,K,,,,,,,,4,"1/4"" Fuel Pipe",Pipe,5,1,D_Inner,4.2,mm,Length,2,m,Roughness,0.015,mm,,,,,,,mdot,0.003,kg/s
-5,Regulator Downstream,No mass,Nitrogen,P,32,bar,T,298,K,,,,,,,,5,Ox Injector,Injector,4,6,A,5.00E-05,m^2,Cd,0.7,,,,,,,,,,,mdot,0.5,kg/s
+4,Ox in Tank,Mass,Nitrous Oxide,m,5,kg,T,270,K,,,,,,,,4,"1/4"" Fuel Pipe",Pipe,5,1,D_Inner,4.2,mm,Length,2,m,Roughness,0.015,mm,,,,,,,mdot,0.003,kg/s
+5,Regulator Downstream,No mass,Nitrogen,P,51,bar,T,298,K,,,,,,,,5,Ox Injector,Injector,4,6,A,5.00E-05,m^2,Cd,0.7,,,,,,,,,,,mdot,0.5,kg/s
 6,Combustion Chamber,No mass,Combustion Gas,P,10,bar,T,298,K,,,,,,,,6,Fuel Injector,Injector,3,6,A,1.50E-05,m^2,Cd,0.7,,,,,,,,,,,mdot,0.5,kg/s
 7,Nozzle Exit,No mass,Combustion Gas,P,1,bar,T,298,K,,,,,,,,7,Nozzle,Nozzle,6,7,D_Throat,35,mm,D_exit,80,mm,,,,,,,,,,mdot,1,kg/s
