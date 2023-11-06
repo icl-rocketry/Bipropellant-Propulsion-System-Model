@@ -5,6 +5,7 @@ For initial testing of the solver, a simplified network representing the engine 
 ![image](https://github.com/icl-rocketry/Bipropellant-Propulsion-System-Model/assets/87128082/481b7028-a13c-446a-89eb-f48c857762ae)
 
 |Node Number|Node Description|
+| ------------- | ------------- |
 |0|HP N2 Tank|
 |1|Fuel Tank Ullage|
 |2|Ox Tank Ullage|
@@ -15,6 +16,7 @@ For initial testing of the solver, a simplified network representing the engine 
 |7|Nozzle Exit|
 
 |Element Number|Element Description|
+| ------------- | ------------- |
 |0|Ox Tank|
 |1|Fuel Tank|
 |2|Pressure Regulator|
