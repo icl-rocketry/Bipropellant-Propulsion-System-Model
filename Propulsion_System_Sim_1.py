@@ -26,7 +26,8 @@ rhost = Pst/(R_N2*Tst)
 #-------------------------------------------------------
 
 #Import the system network .csv file
-System = pd.read_csv('Prop_System_Network_Setup_1.csv')
+#System = pd.read_csv('Prop_System_Network_Setup_1.csv')
+System = pd.read_csv('Simplified_Prop_System_1.csv')
 
 #Get initial fluid pressures (note that liquid pressures are equal to the ullage pressure above them)
 P_0_0 = System.loc[0]['IC 1 Value']*1e5
@@ -77,13 +78,12 @@ U_4_0 = m_4_0*PropsSI('U','P',P_4_0,'T',T_4_0,'N2O')
 #Create vector of initial conditions 
 z0 = [m_0_0, m_1_0, m_2_0, m_3_0, m_4_0]
 
-print(z0)
-
 #Find the number of nodes and elements in the system
 Nodes = int(System['Node Number'].max()) + 1
 NoMassNodes = Nodes - 5
 Elements = int(System['Element Number'].max()) + 1
 FlowElements = Elements - 2
+
 
 
 #Function to find the nozzle mass flow rate at a given chamber pressure (approximately a linear relationship)
@@ -119,7 +119,7 @@ def Pipe(m_dot,rho,mu,L,D,k):
 def Kv_Component_N2(P_1, P_2, T, K_v):
     P_1,P_2 = P_1*1e-5, P_2*1e-5 #Convert pressure to bar
     # determine flow regime through valve
-    if P_1 - P_2 < 1e-5:
+    if (P_1 - P_2) <= 1e-5:
         m_dot = 0
     elif (P_2 >= 0.528*P_1):
         # non-choked flow
@@ -144,10 +144,10 @@ def Kv_Component_Liq(P_1, P_2, rho, K_v):
 
 def Regulator(P_1, P_2, T, K_v_max, t):
     P_1,P_2 = P_1*1e-5, P_2*1e-5
-    
+    '''
     #Equations to approximate a mechanical regulator with a certain maximum Kv and spring
-    Kp = 0.5
-    K_v_controlled = (30 - P_2)*Kp
+    Kp = 5
+    K_v_controlled = (35 - P_2)*Kp
     
     if K_v_controlled < 0:
         K_v_controlled = 0
@@ -155,6 +155,8 @@ def Regulator(P_1, P_2, T, K_v_max, t):
         K_v_controlled = K_v_max
     
     K_v = K_v_controlled
+    '''
+    K_v = K_v_max
     #K_v = np.interp(t, [0, 0.6, 0.8, 10], [0, 0, K_v_controlled, K_v_controlled]) # Define the Kv of the valve based on a predefined path
 
     # determine flow regime through valve
@@ -231,7 +233,7 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
         if System.loc[i]['Node Description'] == 'Nozzle Exit': #Apply boundary condition at the nozzle exit (don't test for continuity here)
             F[i] = (P[i] - 0.8*1e5) * 1e-7
         elif i < 5: #Apply boundary conditions for pressure at all the tank nodes (don't test for continuity here)
-            F[i] = (P[i] - P_guess[i]) * 1e-7
+            F[i] = (P[i] - P_guess[i]) * 1e-5
         else: #Otherwise, it is an internal node where mass continuity equations are needed
             for j in range(2,len(m_dot)+2): #iterate through every element 
                 if System.loc[j]['Upstream Node'] == i:
@@ -239,7 +241,7 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
                 elif System.loc[j]['Downstream Node'] == i:
                     F[i] += m_dot[j-2] #If the node is downstream of the element, then the mass flow is flowing into the node through that element (defined as positive)
         if System.loc[i]['Fluid'] == 'Nitrogen': #Check if the fluid is N2
-            F[i] *= 1e2 #Multiply nitrogen mass flow equations 
+            F[i] *= 10 #Multiply nitrogen mass flow equations 
     
     # Momentum conservation across every element
     for i in range(2,len(m_dot)+2):
@@ -301,6 +303,8 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
             print(System.loc[i]['Element Type'])
             #Some other basic equation to prevent errors
 
+        #print(m_dot[6],m_dot[8],m_dot[9],m_dot[11])
+
 
     #print(F)
 
@@ -325,7 +329,7 @@ def algebraic_equations(t, z):
     x0 = np.concatenate((P_guess,m_dot_guess))
     #print(x0)
     #print('mark 5')
-    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='hybr', tol=1e-10)
+    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='lm', tol=1e-4)
     x = solution.x
     print('Residuals: ', implicit_algebraic_equations(x, z, t, P_guess, T))
 
@@ -346,19 +350,19 @@ def dae_system(t, z):
     
 
     # Differential Equations
-    m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]]
-    m_dot_1 = m_dot[System.index[System['Downstream Node'] == 1]]
-    m_dot_2 = m_dot[System.index[System['Downstream Node'] == 2]]
+    m_dot_0 = -m_dot[System.index[System['Upstream Node'] == 0]-2]
+    m_dot_1 = m_dot[System.index[System['Downstream Node'] == 1]-2]
+    m_dot_2 = m_dot[System.index[System['Downstream Node'] == 2]-2]
     if m_3 <= 0: #Check for fuel depletion
         m_3 = 0
         m_dot_3 = 0
     else:
-        m_dot_3 = -m_dot[System.index[System['Upstream Node'] == 3]]
+        m_dot_3 = -m_dot[System.index[System['Upstream Node'] == 3]-2]
     if m_4 <= 0: #Check for oxidiser depletion
         m_4 = 0
         m_dot_4 = 0
     else:
-        m_dot_4 = -m_dot[System.index[System['Upstream Node'] == 4]]
+        m_dot_4 = -m_dot[System.index[System['Upstream Node'] == 4]-2]
 
     '''
     U_dot_0 = m_dot_0*h[System.index[System['Upstream Node'] == 0]]
@@ -373,13 +377,11 @@ def dae_system(t, z):
 
 
 # Define the time span for integration
-t_span = (0, 0.5)
+t_span = (0, 2)
 
 # Generate evaluation times
 t_eval = np.linspace(*t_span, 10)
 
-# Solve the DAE
-sol = solve_ivp(dae_system, t_span, z0, method='LSODA', t_eval=t_eval)
 
 '''
 t = 4
@@ -388,6 +390,9 @@ P, m_dot, T = algebraic_equations(t, z0)
 
 
 plt.barh(System.loc[:]['Node Description'],P[:]*1e-5)
+for i in range(len(P)):
+    plt.text(x= P[i]*1e-5,y= i,s= round(P[i]*1e-5,1), c='k')
+plt.xlim(0,50)
 plt.grid(which='major',axis='both',linewidth = 0.8)
 plt.minorticks_on()
 plt.grid(which='minor',axis='both',linewidth = 0.2)
@@ -406,6 +411,9 @@ plt.show()
 #print('Mass Flows: ',m_dot)
 '''
 
+# Solve the DAE
+sol = solve_ivp(dae_system, t_span, z0, t_eval=t_eval, method='LSODA')
+
 # Access the solution
 t = sol.t
 m_0, m_1, m_2, m_3, m_4 = sol.y
@@ -421,7 +429,7 @@ for i in range(0, len(P)):
     P[i,:], m_dot[i,:], T[i] = algebraic_equations(t[i], [m_0[i],m_1[i],m_2[i],m_3[i],m_4[i]])
 
 for i in range(0, FlowElements):
-    label = 'm_dot_' + str(i)
+    label = 'm_dot_' + str(i+2)
     plt.plot(t,m_dot[:,i], label=label)
 plt.grid(which='major',axis='both',linewidth = 0.8)
 plt.minorticks_on()
@@ -448,6 +456,19 @@ plt.minorticks_on()
 plt.grid(which='minor',axis='both',linewidth = 0.2)
 plt.xlabel('Time [s]')
 plt.ylabel('Pressure [bar]')
+plt.ylim(0,40)
+plt.legend()
+plt.show()
+
+for i in range(0, Nodes):
+    label = 'P_' + str(i)
+    plt.plot(t,P[:,i]*1e-5, label=label)
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Time [s]')
+plt.ylabel('Pressure [bar]')
+plt.ylim(0,400)
 plt.legend()
 plt.show()
 
