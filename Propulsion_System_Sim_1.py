@@ -20,7 +20,7 @@ Tst = 273.15
 Pst = 101325
 rhost = Pst/(R_N2*Tst)
 
-
+ 
 #-------------------------------------------------------
 #-------------- Initial Conditions ---------------------
 #-------------------------------------------------------
@@ -106,7 +106,7 @@ def SPI_Injector(P_1,P_2,rho,A,C_d):
 
 #Function to find the dP across a pipe of a certain length, diameter and roughness at some mass flow rate
 def Pipe(m_dot,rho,mu,L,D,k):
-    if m_dot < 1e-10:
+    if abs(m_dot) < 1e-10:
         dP = 0
     else:
         U = abs(m_dot)/(rho*(D**2)*np.pi/4) #Find fluid velocity
@@ -119,9 +119,9 @@ def Pipe(m_dot,rho,mu,L,D,k):
 def Kv_Component_N2(P_1, P_2, T, K_v):
     P_1,P_2 = P_1*1e-5, P_2*1e-5 #Convert pressure to bar
     # determine flow regime through valve
-    if (P_1 - P_2) <= 1e-5:
-        m_dot = 0
-    elif (P_2 >= 0.528*P_1):
+    #if (P_1 - P_2) <= 1e-5:
+    #    m_dot = 0
+    if (P_2 >= 0.528*P_1):
         # non-choked flow
         Q_N = K_v*514*(((P_1-P_2)*P_2)/(rhost*T))/np.sqrt(abs(((P_1-P_2)*P_2)/(rhost*T)))
         m_dot = Q_N*(Pst/(R_N2*Tst))*(1/3600) #Convert standard flow rate to mass flow rate in kg/s
@@ -146,8 +146,8 @@ def Regulator(P_1, P_2, T, K_v_max, t):
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     '''
     #Equations to approximate a mechanical regulator with a certain maximum Kv and spring
-    Kp = 5
-    K_v_controlled = (35 - P_2)*Kp
+    Kp = 0.5
+    K_v_controlled = 0.05 + (50 - P_2)*Kp
     
     if K_v_controlled < 0:
         K_v_controlled = 0
@@ -329,7 +329,7 @@ def algebraic_equations(t, z):
     x0 = np.concatenate((P_guess,m_dot_guess))
     #print(x0)
     #print('mark 5')
-    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='lm', tol=1e-4)
+    solution = root(implicit_algebraic_equations, x0, args=(z, t, P_guess, T), method='lm', tol=1e-8)
     x = solution.x
     print('Residuals: ', implicit_algebraic_equations(x, z, t, P_guess, T))
 
@@ -377,10 +377,10 @@ def dae_system(t, z):
 
 
 # Define the time span for integration
-t_span = (0, 3)
+t_span = (0, 5)
 
 # Generate evaluation times
-t_eval = np.linspace(*t_span, 1000)
+t_eval = np.linspace(*t_span, 100)
 
 
 '''
@@ -483,4 +483,13 @@ plt.grid(which='minor',axis='both',linewidth = 0.2)
 plt.xlabel('Time [s]')
 plt.ylabel('Mass [kg]')
 plt.legend()
+plt.show()
+
+
+plt.plot(t,m_dot[:,3]/m_dot[:,4])
+plt.grid(which='major',axis='both',linewidth = 0.8)
+plt.minorticks_on()
+plt.grid(which='minor',axis='both',linewidth = 0.2)
+plt.xlabel('Time [s]')
+plt.ylabel('OF Ratio')
 plt.show()
