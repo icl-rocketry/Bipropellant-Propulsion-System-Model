@@ -2,7 +2,7 @@
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "939ffc32a6e53af2a85fa7b020be18fcaa491e75"
+project_hash = "aea897084aafde8fcb53f0091b7013b369100490"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5d2e21d7b0d8c22f67483ef95ebdc39c0e6b6003"
@@ -230,6 +230,18 @@ version = "1.5.4"
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.6.2"
+
+[[deps.CoolProp]]
+deps = ["CoolProp_jll", "Markdown", "Unitful"]
+git-tree-sha1 = "94062163b5656b1351f7f7a784341b8fe13c1ca1"
+uuid = "e084ae63-2819-5025-826e-f8e611a84251"
+version = "0.1.0"
+
+[[deps.CoolProp_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "3e707957390c96dbe6184dc27eb6da2f5d2e6aac"
+uuid = "3351c21f-4feb-5f29-afb9-f4fcb0e27549"
+version = "6.5.0+0"
 
 [[deps.CpuId]]
 deps = ["Markdown"]
