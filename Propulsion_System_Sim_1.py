@@ -147,7 +147,7 @@ def Regulator(P_1, P_2, T, K_v_max, t):
     '''
     #Equations to approximate a mechanical regulator with a certain maximum Kv and spring
     Kp = 0.5
-    K_v_controlled = 0.05 + (50 - P_2)*Kp
+    K_v_controlled = 0.05 + (40 - P_2)*Kp
     
     if K_v_controlled < 0:
         K_v_controlled = 0
@@ -156,8 +156,8 @@ def Regulator(P_1, P_2, T, K_v_max, t):
     
     K_v = K_v_controlled
     '''
-    K_v = K_v_max
-    #K_v = np.interp(t, [0, 0.6, 0.8, 10], [0, 0, K_v_controlled, K_v_controlled]) # Define the Kv of the valve based on a predefined path
+    #K_v = K_v_max
+    K_v = K_v_max*np.interp(t, [0, 5], [0.08, 0.08]) # Define the Kv of the valve based on a predefined path
 
     # determine flow regime through valve
     if (P_2 >= 0.528*P_1):
@@ -173,7 +173,7 @@ def Ox_Valve(P_1, P_2, K_v_max, t):
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 0.3, 0.3]) # Define the Kv of the valve based on a predefined path
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 4, 4]) # Define the Kv of the valve based on a predefined path
 
-    K_v = K_v_max*np.interp(t, [0, 0.1, 0.2, 2, 2.1, 4, 4.1, 10], [1, 1, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
+    K_v = K_v_max*np.interp(t, [0, 0.49, 0.5, 5], [0, 0, 1, 1]) # Define the Kv of the valve based on a predefined path
 
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     SG = rho_4_L/1000 #Calculate specific gravity of propellant (value for water is 1)
@@ -185,7 +185,7 @@ def Fuel_Valve(P_1, P_2, K_v_max, t):
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 0.3, 0.3]) # Define the Kv of the valve based on a predefined path
     #K_v = np.interp(t, [0, 0.7, 0.9, 2, 2.1, 4, 4.1, 10], [0, 0, 10, 10, 1, 1, 4, 4]) # Define the Kv of the valve based on a predefined path
 
-    K_v = K_v_max*np.interp(t, [0, 0.1, 0.2, 2, 2.1, 4, 4.1, 10], [1, 1, 1, 1, 1, 1, 1, 1]) # Define the Kv of the valve based on a predefined path
+    K_v = K_v_max*np.interp(t, [0, 0.49, 0.5, 5], [0, 0, 1, 1]) # Define the Kv of the valve based on a predefined path
 
     P_1,P_2 = P_1*1e-5, P_2*1e-5
     SG = rho_3_L/1000 #Calculate specific gravity of propellant (value for water is 1)
@@ -290,8 +290,10 @@ def implicit_algebraic_equations(x, z, t, P_guess, T):
             A = System.loc[i]['Param. 3 Value']
             C_d = System.loc[i]['Param. 4 Value']
             if System.loc[int(System.loc[i]['Upstream Node'])]['Fluid'] == 'Nitrous Oxide': #Check if the fluid is nitrous
+                C_d = C_d*np.interp(t, [0, 3.9, 4.4, 9, 9.5, 10], [0.6, 0.6, 0.2, 0.2, 0.6, 0.6]) # Define the Kv of the valve based on a predefined path
                 F[i - 2 + Nodes] = m_dot[i-2] - SPI_Injector(P_1,P_2,rho_4_L,A,C_d)
             else: #Otherwise, fluid is methanol
+                C_d = C_d*np.interp(t, [0, 4, 4.5, 9.1, 9.6, 10], [0.9, 0.9, 0.3, 0.3, 0.9, 0.9]) # Define the Kv of the valve based on a predefined path
                 F[i - 2 + Nodes] = m_dot[i-2] - SPI_Injector(P_1,P_2,rho_3_L,A,C_d)
 
         elif System.loc[i]['Element Type'] == 'Nozzle':
@@ -345,6 +347,11 @@ def dae_system(t, z):
     print('t = ',t)
     m_0, m_1, m_2, m_3, m_4 = z
 
+    if z[3] <= 0: #Check for fuel depletion
+        z[3] = 0
+    if z[4] <= 0.: #Check for ox depletion
+        z[4] = 0
+
     #Algebraic equations to determine other state variables
     P, m_dot, T = algebraic_equations(t, z)
     
@@ -377,7 +384,7 @@ def dae_system(t, z):
 
 
 # Define the time span for integration
-t_span = (0, 5)
+t_span = (0, 10)
 
 # Generate evaluation times
 t_eval = np.linspace(*t_span, 100)
